@@ -101,46 +101,51 @@ class SafariWebAuth: WebAuth {
     }
 
     func start(_ callback: @escaping (Result<Credentials>) -> Void) {
-        guard
-            let redirectURL = self.redirectURL, !redirectURL.absoluteString.hasPrefix(SafariWebAuth.NoBundleIdentifier)
-            else {
-                return callback(Result.failure(error: WebAuthError.noBundleIdentifierFound))
-        }
-        if self.responseType.contains(.idToken) {
-            guard self.nonce != nil else { return callback(Result.failure(error: WebAuthError.noNonceProvided)) }
-        }
-        let handler = self.handler(redirectURL)
-        let state = self.parameters["state"] ?? generateDefaultState()
-        let authorizeURL = self.buildAuthorizeURL(withRedirectURL: redirectURL, defaults: handler.defaults, state: state)
-        let (controller, finish) = newSafari(authorizeURL, callback: callback)
+        if #available(iOS 9.0, *) {
+            guard
+                let redirectURL = self.redirectURL, !redirectURL.absoluteString.hasPrefix(SafariWebAuth.NoBundleIdentifier)
+                else {
+                    return callback(Result.failure(error: WebAuthError.noBundleIdentifierFound))
+            }
+            if self.responseType.contains(.idToken) {
+                guard self.nonce != nil else { return callback(Result.failure(error: WebAuthError.noNonceProvided)) }
+            }
+            let handler = self.handler(redirectURL)
+            let state = self.parameters["state"] ?? generateDefaultState()
+            let authorizeURL = self.buildAuthorizeURL(withRedirectURL: redirectURL, defaults: handler.defaults, state: state)
+            let (controller, finish) = newSafari(authorizeURL, callback: callback)
 
-        let session = SafariSession(controller: controller, redirectURL: redirectURL, state: state, handler: handler, finish: finish, logger: self.logger)
-        controller.delegate = session
-        logger?.trace(url: authorizeURL, source: "Safari")
-        self.presenter.present(controller: controller)
-        self.storage.store(session)
+            let session = SafariSession(controller: controller, redirectURL: redirectURL, state: state, handler: handler, finish: finish, logger: self.logger)
+            controller.delegate = session
+            logger?.trace(url: authorizeURL, source: "Safari")
+            self.presenter.present(controller: controller)
+            self.storage.store(session)
+        }
     }
 
+    @available(iOS 9.0, *)
     func newSafari(_ authorizeURL: URL, callback: @escaping (Result<Credentials>) -> Void) -> (SFSafariViewController, (Result<Credentials>) -> Void) {
-        let controller = SFSafariViewController(url: authorizeURL)
-        let finish: (Result<Credentials>) -> Void = { [weak controller] (result: Result<Credentials>) -> Void in
-            guard let presenting = controller?.presentingViewController else {
-                return callback(Result.failure(error: WebAuthError.cannotDismissWebAuthController))
-            }
-
-            if case .failure(let cause as WebAuthError) = result, case .userCancelled = cause {
-                DispatchQueue.main.async {
-                    callback(result)
+        if #available(iOS 9.0, *) {
+            let controller = SFSafariViewController(url: authorizeURL)
+            let finish: (Result<Credentials>) -> Void = { [weak controller] (result: Result<Credentials>) -> Void in
+                guard let presenting = controller?.presentingViewController else {
+                    return callback(Result.failure(error: WebAuthError.cannotDismissWebAuthController))
                 }
-            } else {
-                DispatchQueue.main.async {
-                    presenting.dismiss(animated: true) {
+
+                if case .failure(let cause as WebAuthError) = result, case .userCancelled = cause {
+                    DispatchQueue.main.async {
                         callback(result)
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        presenting.dismiss(animated: true) {
+                            callback(result)
+                        }
                     }
                 }
             }
+            return (controller, finish)
         }
-        return (controller, finish)
     }
 
     func buildAuthorizeURL(withRedirectURL redirectURL: URL, defaults: [String: String], state: String?) -> URL {
