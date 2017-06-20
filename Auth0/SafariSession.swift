@@ -35,6 +35,7 @@ class SafariSession: NSObject, AuthTransaction {
     let handler: OAuth2Grant
     let logger: Logger?
 
+    @available(iOS 9.0, *)
     init(controller: SFSafariViewController, redirectURL: URL, state: String? = nil, handler: OAuth2Grant, finish: @escaping FinishSession, logger: Logger?) {
         self.controller = controller
         self.redirectURL = redirectURL
@@ -84,6 +85,7 @@ class SafariSession: NSObject, AuthTransaction {
 }
 
 extension SafariSession: SFSafariViewControllerDelegate {
+    @available(iOS 9.0, *)
     func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
         TransactionStore.shared.cancel(self)
     }
