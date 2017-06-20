@@ -23,6 +23,7 @@
 import UIKit
 import SafariServices
 
+@available(iOS 9.0, *)
 class SilentSafariViewController: SFSafariViewController, SFSafariViewControllerDelegate {
     var onResult: (Bool) -> Void = { _ in }
 
