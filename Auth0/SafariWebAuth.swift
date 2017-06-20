@@ -125,27 +125,25 @@ class SafariWebAuth: WebAuth {
 
     @available(iOS 9.0, *)
     func newSafari(_ authorizeURL: URL, callback: @escaping (Result<Credentials>) -> Void) -> (SFSafariViewController, (Result<Credentials>) -> Void) {
-        if #available(iOS 9.0, *) {
-            let controller = SFSafariViewController(url: authorizeURL)
-            let finish: (Result<Credentials>) -> Void = { [weak controller] (result: Result<Credentials>) -> Void in
-                guard let presenting = controller?.presentingViewController else {
-                    return callback(Result.failure(error: WebAuthError.cannotDismissWebAuthController))
-                }
+        let controller = SFSafariViewController(url: authorizeURL)
+        let finish: (Result<Credentials>) -> Void = { [weak controller] (result: Result<Credentials>) -> Void in
+            guard let presenting = controller?.presentingViewController else {
+                return callback(Result.failure(error: WebAuthError.cannotDismissWebAuthController))
+            }
 
-                if case .failure(let cause as WebAuthError) = result, case .userCancelled = cause {
-                    DispatchQueue.main.async {
+            if case .failure(let cause as WebAuthError) = result, case .userCancelled = cause {
+                DispatchQueue.main.async {
+                    callback(result)
+                }
+            } else {
+                DispatchQueue.main.async {
+                    presenting.dismiss(animated: true) {
                         callback(result)
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        presenting.dismiss(animated: true) {
-                            callback(result)
-                        }
                     }
                 }
             }
-            return (controller, finish)
         }
+        return (controller, finish)
     }
 
     func buildAuthorizeURL(withRedirectURL redirectURL: URL, defaults: [String: String], state: String?) -> URL {
@@ -189,10 +187,12 @@ class SafariWebAuth: WebAuth {
     }
 
     func clearSession(federated: Bool, callback: @escaping (Bool) -> Void) {
-        let logoutURL = federated ? URL(string: "/v2/logout?federated", relativeTo: self.url)! : URL(string: "/v2/logout", relativeTo: self.url)!
-        let controller = SilentSafariViewController(url: logoutURL) { callback($0) }
-        logger?.trace(url: logoutURL, source: "Safari")
-        self.presenter.present(controller: controller)
+        if #available(iOS 9.0, *) {
+            let logoutURL = federated ? URL(string: "/v2/logout?federated", relativeTo: self.url)! : URL(string: "/v2/logout", relativeTo: self.url)!
+            let controller = SilentSafariViewController(url: logoutURL) { callback($0) }
+            logger?.trace(url: logoutURL, source: "Safari")
+            self.presenter.present(controller: controller)
+        }
     }
 }
 
