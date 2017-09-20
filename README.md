@@ -6,15 +6,15 @@
 [![License](https://img.shields.io/cocoapods/l/Auth0.svg?style=flat-square)](http://cocoadocs.org/docsets/Auth0)
 [![Platform](https://img.shields.io/cocoapods/p/Auth0.svg?style=flat-square)](http://cocoadocs.org/docsets/Auth0)
 [![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat-square)](https://github.com/Carthage/Carthage)
-![Swift 3.0](https://img.shields.io/badge/Swift-3.0-orange.svg?style=flat-square)
+![Swift 3.1](https://img.shields.io/badge/Swift-3.1-orange.svg?style=flat-square)
 
 Swift toolkit that lets you communicate efficiently with many of the [Auth0 API](https://auth0.com/docs/api/info) functions and enables you to seamlessly integrate the Auth0 login.
 
 ## Requirements
 
 - iOS 9 or later
-- Xcode 8
-- Swift 3.0
+- Xcode 8.3 / 9.0
+- Swift 3.1+
 
 ## Installation
 
@@ -23,7 +23,7 @@ Swift toolkit that lets you communicate efficiently with many of the [Auth0 API]
 If you are using Carthage, add the following lines to your `Cartfile`:
 
 ```ruby
-pod "Auth0", '~> 1.6'
+github "auth0/Auth0.swift" ~> 1.8
 ```
 
 Then run `carthage bootstrap`.
@@ -36,7 +36,7 @@ If you are using [Cocoapods](https://cocoapods.org/), add these lines to your `P
 
 ```ruby
 use_frameworks!
-pod 'Auth0', '~> 1.6'
+pod 'Auth0', '~> 1.8'
 ```
 
 Then, run `pod install`.
@@ -56,6 +56,7 @@ import Auth0
 ```swift
 Auth0
     .webAuth()
+    .audience("https://{YOUR_AUTH0_DOMAIN}/userinfo")
     .start { result in
         switch result {
         case .success(let credentials):
@@ -65,6 +66,8 @@ Auth0
         }
     }
 ```
+
+> This snippet sets the `audience` to ensure OIDC compliant responses, this can also be achieved by enabling the **OIDC Conformant** switch in your Auth0 dashboard under `Client / Settings / Advanced OAuth`. For more information please check [this documentation](https://auth0.com/docs/api-auth/intro#how-to-use-the-new-flows).
 
 3. Allow Auth0 to handle authentication callbacks. In your `AppDelegate.swift` add the following:
 ```swift
@@ -120,6 +123,8 @@ In your application's `Info.plist` file, register your iOS Bundle Identifer as a
 </array>
 ```
 
+> If your `Info.plist` is not shown in this format, you can **Right Click** on `Info.plist` in Xcode and then select **Open As / Source Code**.
+
 Finally, go to your [Auth0 Dashboard](${manage_url}/#/applications/${account.clientId}/settings) and make sure that **Allowed Callback URLs** contains the following:
 
 ```text
@@ -139,7 +144,7 @@ Check out the [iOS Swift QuickStart Guide](https://auth0.com/docs/quickstart/nat
 ```swift
 Auth0
    .authentication()
-   .userInfo(token: accessToken)
+   .userInfo(withAccessToken: accessToken)
    .start { result in
        switch result {
        case .success(let profile):
@@ -193,11 +198,14 @@ credentialsManager.credentials { error, credentials in
 
 ### Authentication API (iOS / macOS / tvOS)
 
-The Authentication API exposes the identity functionality of Auth0, as well as the supported identity protocols like OpenID Connect, OAuth 2.0, and SAML.
+The Authentication API exposes AuthN/AuthZ functionality of Auth0, as well as the supported identity protocols like OpenID Connect, OAuth 2.0, and SAML.
+We recommend using our Hosted Login Page but if you wish to build your own UI you can use our API endpoints to do so. However some Auth flows (Grant types) are disabled by default so you will need to enable them via your Auth0 Dashboard as explained in [this guide](https://auth0.com/docs/clients/client-grant-types#edit-available-grant_types).
 
-Most users consume this API through our Quickstarts, the hosted login or the [Lock widget](https://github.com/auth0/Lock.swift). However, if you are building all of your authentication UI manually you can interact with this API directly.
+These are the required Grant Types that needs to be enabled in your client:
 
-#### Login with database connection
+* **Password**: For login with username/password using a realm (or connection name). If you set the grants via API you should activate both `http://auth0.com/oauth/grant-type/password-realm` and `password`, otherwise Auth0 Dashboard will take care of activating both when `Password` is enabled.
+
+#### Login with database connection (via Realm)
 
 ```swift
 Auth0
@@ -216,6 +224,8 @@ Auth0
          }
      }
 ```
+
+> This requires `Password` Grant or `http://auth0.com/oauth/grant-type/password-realm`
 
 #### Sign Up with database connection
 
@@ -239,93 +249,23 @@ Auth0
     }
 ```
 
-### Passwordless
-
-Passwordless connections in Auth0 allow users to login without the need to remember a password. This is a two step process:
-1. Request a OTP to be sent to the user by email or SMS
-2. Perform the login using the OTP
-
-#### Email OTP
-
-```swift
-Auth0
-    .authentication()
-    .startPasswordless(
-        email: "support@auth0.com",
-        type: .Code,
-        connection: "email",
-        parameters: [:])
-    .start { result in
-        switch result {
-        case .success:
-            print("OTP Sent")
-        case .failure(let error):
-            print("Failed with \(error)")
-        }
-    }
-```
-
-#### Email Login
-
-```swift
-Auth0
-    .authentication()
-    .login(
-        usernameOrEmail: "support@auth0.com",
-        password: "OTP Code",
-        realm: "email",
-        scope: "openid")
-     .start { result in
-         switch result {
-         case .success(let credentials):
-            print("Obtained credentials: \(credentials)")
-         case .failure(let error):
-            print("Failed with \(error)")
-         }
-     }
-```
-
-#### SMS OTP
-
-```swift
-Auth0
-    .authentication()
-    .startPasswordless(
-        phoneNumber: "01234567890"
-        type: .Code,
-        connection: "sms",
-        parameters: [:])
-    .start { result in
-        switch result {
-        case .success:
-            print("OTP Sent")
-        case .failure(let error):
-            print("Failed with \(error)")
-        }
-    }
-```
-
-#### SMS Login
-
-```swift
-Auth0
-    .authentication()
-    .login(
-        usernameOrEmail: "01234567890",
-        password: "OTP Code",
-        realm: "sms",
-        scope: "openid")
-     .start { result in
-         switch result {
-         case .success(let credentials):
-            print("Obtained credentials: \(credentials)")
-         case .failure(let error):
-            print("Failed with \(error)")
-         }
-     }
-```
-
 ### Management API (Users)
+
+#### Retrieve user_metadata
+
+```swift
+Auth0
+    .users(token: idToken)
+    .get("user identifier", fields: ["user_metadata"], include: true)
+    .start { result in
+        switch result {
+        case .success(let userInfo):
+            print("user: \(userInfo)")
+        case .failure(let error):
+            print(error)
+        }
+    }
+```
 
 #### Update user_metadata
 

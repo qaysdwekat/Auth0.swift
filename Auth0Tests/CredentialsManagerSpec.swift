@@ -29,8 +29,10 @@ import LocalAuthentication
 @testable import Auth0
 
 private let AccessToken = UUID().uuidString.replacingOccurrences(of: "-", with: "")
+private let NewAccessToken = UUID().uuidString.replacingOccurrences(of: "-", with: "")
 private let TokenType = "bearer"
 private let IdToken = UUID().uuidString.replacingOccurrences(of: "-", with: "")
+private let NewIdToken = UUID().uuidString.replacingOccurrences(of: "-", with: "")
 private let RefreshToken = UUID().uuidString.replacingOccurrences(of: "-", with: "")
 private let ExpiresIn: TimeInterval = 3600
 private let ClientId = "CLIENT_ID"
@@ -51,10 +53,63 @@ class CredentialsManagerSpec: QuickSpec {
 
         describe("storage") {
 
+            afterEach {
+                _ = credentialsManager.clear()
+            }
+
             it("should store credentials in keychain") {
                 expect(credentialsManager.store(credentials: credentials)).to(beTrue())
             }
 
+            it("should clear credentials in keychain") {
+                expect(credentialsManager.store(credentials: credentials)).to(beTrue())
+                expect(credentialsManager.clear()).to(beTrue())
+            }
+
+            it("should fail to clear credentials") {
+                expect(credentialsManager.clear()).to(beFalse())
+            }
+
+        }
+
+        describe("valididity") {
+
+            afterEach {
+                _ = credentialsManager.clear()
+            }
+
+            it("should have valid credentials when stored and not expired") {
+                expect(credentialsManager.store(credentials: credentials)).to(beTrue())
+                expect(credentialsManager.hasValid()).to(beTrue())
+            }
+
+            it("should not have valid credentials when keychain empty") {
+                expect(credentialsManager.hasValid()).to(beFalse())
+            }
+
+            it("should have valid credentials when token valid and no refresh token present") {
+                let credentials = Credentials(accessToken: AccessToken, tokenType: TokenType, idToken: IdToken, refreshToken: nil, expiresIn: Date(timeIntervalSinceNow: ExpiresIn))
+                expect(credentialsManager.store(credentials: credentials)).to(beTrue())
+                expect(credentialsManager.hasValid()).to(beTrue())
+            }
+
+            it("should have valid credentials when token expired and refresh token present") {
+                let credentials = Credentials(accessToken: AccessToken, tokenType: TokenType, idToken: IdToken, refreshToken: RefreshToken, expiresIn: Date(timeIntervalSinceNow: -ExpiresIn))
+                expect(credentialsManager.store(credentials: credentials)).to(beTrue())
+                expect(credentialsManager.hasValid()).to(beTrue())
+            }
+
+            it("should not have valid credentials when token expired and no refresh token present") {
+                let credentials = Credentials(accessToken: AccessToken, tokenType: TokenType, idToken: IdToken, refreshToken: nil, expiresIn: Date(timeIntervalSinceNow: -ExpiresIn))
+                expect(credentialsManager.store(credentials: credentials)).to(beTrue())
+                expect(credentialsManager.hasValid()).to(beFalse())
+            }
+
+            it("should not have valid credentials when no access token") {
+                let credentials = Credentials(accessToken: nil, tokenType: TokenType, idToken: IdToken, refreshToken: RefreshToken, expiresIn: Date(timeIntervalSinceNow: ExpiresIn))
+                expect(credentialsManager.store(credentials: credentials)).to(beTrue())
+                expect(credentialsManager.hasValid()).to(beFalse())
+            }
         }
 
         describe("retrieval") {
@@ -65,7 +120,7 @@ class CredentialsManagerSpec: QuickSpec {
             beforeEach {
                 error = nil
                 newCredentials = nil
-                stub(condition: isToken(Domain) && hasAtLeast(["refresh_token": RefreshToken])) { _ in return authResponse(accessToken: AccessToken) }.name = "renew success"
+                stub(condition: isToken(Domain) && hasAtLeast(["refresh_token": RefreshToken])) { _ in return authResponse(accessToken: NewAccessToken, idToken: NewIdToken, expiresIn: 86400) }.name = "renew success"
             }
 
             afterEach {
@@ -122,14 +177,32 @@ class CredentialsManagerSpec: QuickSpec {
 
             context("renew") {
 
-                it("should yield new credentials") {
+                it("should yield new credentials, maintain refresh token") {
                     credentials = Credentials(accessToken: AccessToken, tokenType: TokenType, idToken: IdToken, refreshToken: RefreshToken, expiresIn: Date(timeIntervalSinceNow: -3600))
                     _ = credentialsManager.store(credentials: credentials)
                     waitUntil(timeout: 2) { done in
                         credentialsManager.credentials { error = $0; newCredentials = $1
                             expect(error).to(beNil())
-                            expect(newCredentials?.accessToken) == AccessToken
+                            expect(newCredentials?.accessToken) == NewAccessToken
+                            expect(newCredentials?.refreshToken) == RefreshToken
+                            expect(newCredentials?.idToken) == NewIdToken
                             done()
+                        }
+                    }
+                }
+
+                it("should store new credentials") {
+                    credentials = Credentials(accessToken: AccessToken, tokenType: TokenType, idToken: IdToken, refreshToken: RefreshToken, expiresIn: Date(timeIntervalSinceNow: -3600))
+                    _ = credentialsManager.store(credentials: credentials)
+                    waitUntil(timeout: 2) { done in
+                        credentialsManager.credentials { error = $0; newCredentials = $1
+                            expect(error).to(beNil())
+                            credentialsManager.credentials {
+                                expect($1!.accessToken) == NewAccessToken
+                                expect($1!.refreshToken) == RefreshToken
+                                expect($1!.idToken) == NewIdToken
+                                done()
+                            }
                         }
                     }
                 }

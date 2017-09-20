@@ -1,5 +1,44 @@
 # Change Log
 
+## [1.8.0](https://github.com/auth0/Auth0.swift/tree/1.8.0) (2017-09-15)
+[Full Changelog](https://github.com/auth0/Auth0.swift/compare/1.7.2...1.8.0)
+
+**Changed**
+- Updated Xcode 9 / Swift 3.2, Clean up for Swift 4 migration. [\#149](https://github.com/auth0/Auth0.swift/pull/149) ([cocojoe](https://github.com/cocojoe))
+
+**Fixed**
+- Disabled Code coverage Xcode 9 [\#151](https://github.com/auth0/Auth0.swift/pull/151) ([cocojoe](https://github.com/cocojoe))
+
+## [1.7.2](https://github.com/auth0/Auth0.swift/tree/1.7.2) (2017-09-11)
+[Full Changelog](https://github.com/auth0/Auth0.swift/compare/1.7.1...1.7.2)
+
+**Added**
+- Added invalid_credentials check for /oauth/token [\#147](https://github.com/auth0/Auth0.swift/pull/147) ([cocojoe](https://github.com/cocojoe))
+
+**Fixed**
+- Fixed - Ensure existing refreshToken returned in Credentials Manager [\#146](https://github.com/auth0/Auth0.swift/pull/146) ([cocojoe](https://github.com/cocojoe))
+
+## [1.7.1](https://github.com/auth0/Auth0.swift/tree/1.7.1) (2017-07-11)
+[Full Changelog](https://github.com/auth0/Auth0.swift/compare/1.7.0...1.7.1)
+
+**Added**
+- Added credential manager methods `clear` and `hasValid` [\#133](https://github.com/auth0/Auth0.swift/pull/133) ([cocojoe](https://github.com/cocojoe))
+
+## [1.7.0](https://github.com/auth0/Auth0.swift/tree/1.7.0) (2017-06-26)
+[Full Changelog](https://github.com/auth0/Auth0.swift/compare/1.6.0...1.7.0)
+
+**Added**
+- Added OIDC Conformant UserInfo class and API Method [\#122](https://github.com/auth0/Auth0.swift/pull/122) ([cocojoe](https://github.com/cocojoe))
+- Added scope property to Credentials [\#120](https://github.com/auth0/Auth0.swift/pull/120) ([cocojoe](https://github.com/cocojoe))
+- Added Touch ID Utility [\#116](https://github.com/auth0/Auth0.swift/pull/116) ([cocojoe](https://github.com/cocojoe))
+
+**Changed**
+- Use new SFSafariViewController init for iOS11 [\#125](https://github.com/auth0/Auth0.swift/pull/125) ([cocojoe](https://github.com/cocojoe))
+- Refactor deprecated Matcher protocol with Predicate protocol [\#117](https://github.com/auth0/Auth0.swift/pull/117) ([cocojoe](https://github.com/cocojoe))
+
+**Deprecated**
+- Document Legacy Grant Types & Method deprecations [\#126](https://github.com/auth0/Auth0.swift/pull/126) ([cocojoe](https://github.com/cocojoe))
+
 ## [1.6.0](https://github.com/auth0/Auth0.swift/tree/1.6.0) (2017-06-06)
 [Full Changelog](https://github.com/auth0/Auth0.swift/compare/1.5.0...1.6.0)
 
